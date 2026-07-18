@@ -1,0 +1,17 @@
+services:
+  nominatim:
+    build: .
+    shm_size: 1g
+    environment:
+      PBF_URL: ${PBF_URL:-https://download.geofabrik.de/south-america/colombia-latest.osm.pbf}
+      NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:-changeme}
+      API_KEY: ${API_KEY:-}
+      PORT: ${PORT:-8000}
+    ports:
+      - "${PORT:-8000}:8000"
+      - "8080:8080"
+    volumes:
+      - nominatim-data:/var/lib/postgresql/16/main
+
+volumes:
+  nominatim-data:
