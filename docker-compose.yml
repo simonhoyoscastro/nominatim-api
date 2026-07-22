@@ -3,7 +3,7 @@ services:
     build: .
     shm_size: 1g
     environment:
-      PBF_URL: ${PBF_URL:-https://download.geofabrik.de/south-america/colombia-latest.osm.pbf}
+      PBF_URL: ${PBF_URL:-https://raw.githubusercontent.com/simonhoyoscastro/nominatim-api/main/data/antioquia-latest.osm.pbf}
       NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:-changeme}
       API_KEY: ${API_KEY:-}
       PORT: ${PORT:-8000}

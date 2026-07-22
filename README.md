@@ -1,14 +1,21 @@
 # nominatim-api
 
-A self-hosted, Colombia-only Nominatim instance with a minimal HTTP API that
+A self-hosted, Antioquia-only Nominatim instance with a minimal HTTP API that
 returns a postcode for a given latitude/longitude. Built to deploy as a
 single Docker service on [Railway](https://railway.app).
 
 It wraps the [`mediagis/nominatim`](https://github.com/mediagis/nominatim-docker)
 all-in-one image (Postgres + PostGIS + osm2pgsql + Nominatim's API server in
-one container) and imports only Colombia (`address` import style,
-reverse-lookup-only) to keep the dataset light — no search index, no POI
-data, just what's needed to resolve a coordinate down to a postcode.
+one container) and imports only the Antioquia department (`address` import
+style, reverse-lookup-only) to keep the dataset light — no search index, no
+POI data, just what's needed to resolve a coordinate down to a postcode.
+
+Scoped down from full-country Colombia coverage because Geofabrik doesn't
+offer department-level extracts and the full country import doesn't fit
+under Railway's 5GB Hobby-plan volume cap. The Antioquia extract
+(`data/antioquia-latest.osm.pbf`, bbox-clipped from the full Colombia PBF
+with `osmium extract`) is ~64MB vs. the full country's ~307MB. See
+"Changing region" below to restore full coverage on a larger volume.
 
 ## API
 
@@ -73,10 +80,28 @@ curl "http://localhost:8080/status"                              # Nominatim its
 
 ### Changing region
 
-To cover a different country instead of Colombia, override `PBF_URL` with
-any [Geofabrik](https://download.geofabrik.de) `.osm.pbf` URL as a service
-variable. Re-importing requires clearing the Railway volume (or starting a
-fresh service) since the existing import marker will otherwise be reused.
+To cover a different area, override `PBF_URL` as a service variable with
+either a [Geofabrik](https://download.geofabrik.de) `.osm.pbf` URL (country-level
+only — no sub-national extracts for Colombia) or a custom bbox-clipped extract
+like `data/antioquia-latest.osm.pbf` (see below for how that one was made).
+Re-importing requires clearing the Railway volume (or starting a fresh
+service) since the existing import marker will otherwise be reused.
+
+To restore full Colombia coverage, either move to a plan/volume without the
+5GB cap and set `PBF_URL` back to
+`https://download.geofabrik.de/south-america/colombia-latest.osm.pbf`, or clip
+a larger custom region the same way Antioquia was extracted:
+
+```sh
+docker run --rm -v "$(pwd)/data:/data" debian:bookworm-slim bash -c "
+  apt-get update -qq && apt-get install -y -qq osmium-tool
+  osmium extract -b <left>,<bottom>,<right>,<top> --strategy=smart \
+    /data/colombia-latest.osm.pbf -o /data/custom-region.osm.pbf
+"
+```
+
+Commit the resulting file under `data/` and point `PBF_URL` at its raw
+GitHub URL (or any other HTTPS host).
 
 ## How it works
 
