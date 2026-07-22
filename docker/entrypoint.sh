@@ -1,5 +1,18 @@
 #!/bin/bash -e
 
+PGDATA=/var/lib/postgresql/16/main
+
+# Railway (and other block-storage volume providers) format the volume with
+# a filesystem that leaves a lost+found dir at the mount root. initdb refuses
+# to initialize into a non-empty directory, so on a fresh volume it fails
+# every time with "directory exists but is not empty". Only strip it when
+# Postgres hasn't been initialized yet (PG_VERSION doesn't exist) so this is
+# a no-op once real data is present.
+if [ -d "$PGDATA/lost+found" ] && [ ! -f "$PGDATA/PG_VERSION" ]; then
+  echo "Removing lost+found from fresh volume mount so initdb can proceed"
+  rm -rf "$PGDATA/lost+found"
+fi
+
 # Nominatim's own start.sh does the import (first boot only, guarded by an
 # on-disk marker file), starts Postgres, and daemonizes gunicorn on :8080.
 # It never returns while running, so we background it and wait for it to
